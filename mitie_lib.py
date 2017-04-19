@@ -37,13 +37,13 @@ def find_binary_relation_in_text(text, subject, object_, predicate):
     tokens = get_tokens(text)
     ner = get_ner()
     entities = ner.extract_entities(tokens)
-    #for entity in entities:
+    # for entity in entities:
     #    print_ner(tokens, entity)
 
     subject_positions = find_name_positions_in_text(tokens, entities, subject)
     object_positions = find_name_positions_in_text(tokens, entities, object_)
 
-    if(len(subject_positions) == 0 or len(object_positions) == 0):
+    if (len(subject_positions) == 0 or len(object_positions) == 0):
         return []
 
     results = []
@@ -63,26 +63,28 @@ def find_name_positions_in_text(tokens, entities, name):
     positions = []
     for entity in entities:
         entity_name = extract_text_by_xrange(tokens, entity[0])
-        if(compare_names(name, entity_name)):
+        if (compare_names(name, entity_name)):
             positions.append(entity)
 
-    if(len(positions) == 0):
+    if (len(positions) == 0):
         # if our name is not Named entity, try to find it in the text
         tt = get_tokens(name)
-        for i in range(len(tokens)-len(tt)+1):
+        for i in range(len(tokens) - len(tt) + 1):
             correct = True
             for j in range(len(tt)):
-                if(tokens[i+j].lower() != tt[j].lower()):
+                if (tokens[i + j].lower() != tt[j].lower()):
                     correct = False
                     break
-            if(correct):
-                p = xrange(i, i+len(tt))
+            if (correct):
+                p = xrange(i, i + len(tt))
                 positions.append((p, "UNKNOWN"))
 
     return positions
 
 
 ner_extractor = None
+
+
 def get_ner():
     global ner_extractor
     if ner_extractor is None:
@@ -100,26 +102,32 @@ def extract_text_by_xrange(tokens, xr):
 
 
 ## extract text from tokens with offset
-def extract_text_by_xrange(tokens, xr):
-    return " ".join([tokens[i] for i in xr])
+def extract_text_by_xrange_with_offset(tokens, xr):
+    start_index = extract_range_start(xr)
+
 
 
 ## combine two xranges in one
 def extract_xrange_bounds(xr1, xr2, margin, maxlen):
-    start = 0
-    for i in xr1:
-        start = i
-        break
+    start = extract_range_start(xr1)
 
     finish = 0
     for i in xr2:
         finish = i
     finish += 1
 
-    if(finish <= start):
+    if (finish <= start):
         return extract_xrange_bounds(xr2, xr1, margin, maxlen)
 
-    start = max(start-margin, 0)
-    finish = min(finish+margin, maxlen)
+    start = max(start - margin, 0)
+    finish = min(finish + margin, maxlen)
 
     return xrange(start, finish)
+
+
+def extract_range_start(r):
+    start = 0
+    for i in r:
+        start = i
+        break
+    return start
