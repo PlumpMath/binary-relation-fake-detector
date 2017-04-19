@@ -10,7 +10,9 @@ def read_article_file_as_datarow(df, path_to_xml):
         try_int(e.findall("is_revelation")[0].text),
         e.findall("title")[0].text,
         e.findall("url")[0].text,
-        e.findall("body")[0].text]
+        e.findall("body")[0].text,
+        path_to_xml
+    ]
 
 
 def try_int(s):
@@ -21,7 +23,7 @@ def try_int(s):
 
 
 def read_list_of_articles_as_dataset(ls):
-    df = pd.DataFrame(columns=[ "SourceId", "BinaryRelationId", "IsRevelation", "Title", "Url", "Body" ])
+    df = pd.DataFrame(columns=[ "SourceId", "BinaryRelationId", "IsRevelation", "Title", "Url", "Body", "Path"])
     for path in ls:
         read_article_file_as_datarow(df, path)
     return df

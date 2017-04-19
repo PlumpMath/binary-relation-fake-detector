@@ -99,6 +99,11 @@ def extract_text_by_xrange(tokens, xr):
     return " ".join([tokens[i] for i in xr])
 
 
+## extract text from tokens with offset
+def extract_text_by_xrange(tokens, xr):
+    return " ".join([tokens[i] for i in xr])
+
+
 ## combine two xranges in one
 def extract_xrange_bounds(xr1, xr2, margin, maxlen):
     start = 0
