@@ -33,30 +33,43 @@ def get_tokens(text):
     return tokenize(text)
 
 
-def find_binary_relation_in_text(text, subject, object_, predicate):
+def find_binary_relation_in_text(text, subject, object_, predicate, extract_text=True):
+    # split text on tokens
     tokens = get_tokens(text)
     ner = get_ner()
-    entities = ner.extract_entities(tokens)
-    # for entity in entities:
-    #    print_ner(tokens, entity)
 
+    entities = ner.extract_entities(tokens)
     subject_positions = find_name_positions_in_text(tokens, entities, subject)
     object_positions = find_name_positions_in_text(tokens, entities, object_)
 
-    if (len(subject_positions) == 0 or len(object_positions) == 0):
+    # continue if any relation is possible
+    if len(subject_positions) == 0 or len(object_positions) == 0:
         return []
 
     results = []
+
     rel_detector = binary_relation_type_to_model(predicate)
+    tokens_with_offset = []
+    if extract_text:
+        tokens_with_offset = tokenize_with_offsets(text)
+
     for subj, obj in itertools.product(subject_positions, object_positions):
         rel = ner.extract_binary_relation(tokens, subj[0], obj[0])
-
         score = rel_detector(rel)
-        relation_bounds = extract_xrange_bounds(subj[0], obj[0], 2, len(tokens))
-        relation_text = extract_text_by_xrange(tokens, relation_bounds)
-        results.append((subj, obj, score, relation_text))
+        if extract_text:
+            relation_bounds = extract_xrange_bounds(subj[0], obj[0], 2, len(tokens_with_offset))
+            relation_text = extract_text_by_xrange_with_offset(tokens_with_offset, relation_bounds)
+            results.append((subj, obj, score, relation_text))
+        else:
+            results.append((subj, obj, score))
 
     return results
+
+
+def extract_text_between_entities(subj, obj, text):
+    tokens = tokenize_with_offsets(text)
+    relation_bounds = extract_xrange_bounds(subj[0], obj[0], 2, len(tokens))
+    return extract_text_by_xrange_with_offset(tokens, relation_bounds)
 
 
 def find_name_positions_in_text(tokens, entities, name):
@@ -101,10 +114,23 @@ def extract_text_by_xrange(tokens, xr):
     return " ".join([tokens[i] for i in xr])
 
 
-## extract text from tokens with offset
-def extract_text_by_xrange_with_offset(tokens, xr):
+## extract text from tokens with offset, restoring original identation
+def extract_text_by_xrange_with_offset(tokens_with_offset, xr):
     start_index = extract_range_start(xr)
+    start_offset = tokens_with_offset[start_index][1]
+    results = []
+    current_index = start_offset
+    for index in xr:
+        token = tokens_with_offset[index]
+        if current_index < token[1]:
+            # add spaces
+            to_add = token[1] - current_index
+            results.append(' ' * to_add)
+            current_index += to_add
+        results.append(token[0])
+        current_index += len(token[0])
 
+    return ''.join([r for r in results])
 
 
 ## combine two xranges in one
@@ -116,7 +142,7 @@ def extract_xrange_bounds(xr1, xr2, margin, maxlen):
         finish = i
     finish += 1
 
-    if (finish <= start):
+    if finish <= start:
         return extract_xrange_bounds(xr2, xr1, margin, maxlen)
 
     start = max(start - margin, 0)
