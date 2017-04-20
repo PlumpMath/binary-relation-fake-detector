@@ -1,18 +1,22 @@
 import xml.etree.ElementTree as ET
 import pandas as pd
+import codecs
+
 
 
 def read_article_file_as_datarow(df, path_to_xml):
-    e = ET.parse(path_to_xml).getroot()
-    df.loc[len(df)] = [
-        try_int(e.findall("source_id")[0].text),
-        try_int(e.findall("binary_relation_id")[0].text),
-        try_int(e.findall("is_revelation")[0].text),
-        e.findall("title")[0].text,
-        e.findall("url")[0].text,
-        e.findall("body")[0].text,
-        path_to_xml
-    ]
+    with codecs.open(path_to_xml, 'r') as f:
+        text = f.read()
+        e = ET.fromstring(text)
+        df.loc[len(df)] = [
+            try_int(e.findall("source_id")[0].text),
+            try_int(e.findall("binary_relation_id")[0].text),
+            try_int(e.findall("is_revelation")[0].text),
+            e.findall("title")[0].text,
+            e.findall("url")[0].text,
+            e.findall("body")[0].text,
+            path_to_xml
+        ]
 
 
 def try_int(s):
